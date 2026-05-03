@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:latest
+    image: postgres:latest 
     container_name: ecommerce_postgres
     environment:
       POSTGRES_USER: postgres
@@ -10,7 +10,7 @@ services:
       - "5432:5432"
 
   api:
-    image: ecommerce_api
+    image: ecommerce-api-local
     build:
       context: ./src
       dockerfile: ECommerce.Api/Dockerfile
@@ -19,4 +19,5 @@ services:
     depends_on:
       - db
     environment:
+      - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=ecommerce_db;Username=postgres;Password=mx050282
