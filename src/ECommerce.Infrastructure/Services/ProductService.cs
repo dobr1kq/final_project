@@ -28,6 +28,17 @@ public class ProductService(AppDbContext context) : IProductService
 
     public async Task CreateProductAsync(Product product)
     {
+        if (string.IsNullOrWhiteSpace(product.SKU))
+        {
+            throw new ArgumentException("SKU повинен бути заповнений", nameof(product.SKU));
+        }
+
+        var existing = await context.Products.AnyAsync(p => p.SKU == product.SKU);
+        if (existing)
+        {
+            throw new InvalidOperationException("SKU має бути унікальним");
+        }
+
         context.Products.Add(product);
         await context.SaveChangesAsync();
     }

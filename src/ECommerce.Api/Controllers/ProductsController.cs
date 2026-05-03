@@ -31,7 +31,7 @@ public class ProductsController : ControllerBase
         try
         {
             await _productService.CreateProductAsync(product);
-            return CreatedAtAction(nameof(GetProducts), new { id = product.Id }, product);
+            return Created(string.Empty, product);
         }
         catch (Exception ex)
         {

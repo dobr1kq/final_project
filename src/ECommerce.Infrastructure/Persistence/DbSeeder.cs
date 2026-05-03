@@ -17,7 +17,7 @@ public static class DbSeeder
             .RuleFor(p => p.Price, f => decimal.Parse(f.Commerce.Price(10, 1000)))
             .RuleFor(p => p.StockQuantity, f => f.Random.Int(0, 100))
             .RuleFor(p => p.Category, f => f.Commerce.Categories(1)[0])
-            .RuleFor(p => p.SKU, f => f.Commerce.Ean13());
+            .RuleFor(p => p.SKU, f => Guid.NewGuid().ToString("N").Substring(0, 13));
 
         var products = productFaker.Generate(10000);
 

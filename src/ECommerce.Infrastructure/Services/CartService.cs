@@ -38,15 +38,20 @@ public class CartService : ICartService
 
     public async Task AddItemAsync(string userId, Guid productId, int quantity)
     {
+        if (quantity <= 0)
+        {
+            throw new ArgumentException("Кількість має бути більше нуля", nameof(quantity));
+        }
+
         var product = await _context.Products.FindAsync(productId);
         if (product == null)
         {
-            throw new Exception("Товар не знайдено");
+            throw new InvalidOperationException("Товар не знайдено");
         }
 
         if (product.StockQuantity < quantity)
         {
-            throw new Exception("Недостатньо товару на складі");
+            throw new InvalidOperationException("Недостатньо товару на складі");
         }
 
         var cart = await GetCartByUserIdAsync(userId);
@@ -57,20 +62,22 @@ public class CartService : ICartService
             var newTotalQuantity = existingItem.Quantity + quantity;
             if (product.StockQuantity < newTotalQuantity)
             {
-                throw new Exception("Сумарна кількість перевищує залишок на складі");
+                throw new InvalidOperationException("Сумарна кількість перевищує залишок на складі");
             }
             existingItem.Quantity = newTotalQuantity;
         }
         else
         {
-            cart.Items.Add(new CartItem 
+            var newItem = new CartItem 
             { 
                 Id = Guid.NewGuid(),
                 CartId = cart.Id,
                 ProductId = productId, 
                 Quantity = quantity, 
                 UnitPrice = product.Price 
-            });
+            };
+            _context.CartItems.Add(newItem);
+            cart.Items.Add(newItem);
         }
 
         cart.UpdatedAt = DateTime.UtcNow;
@@ -79,23 +86,28 @@ public class CartService : ICartService
 
     public async Task UpdateQuantityAsync(string userId, Guid productId, int quantity)
     {
+        if (quantity <= 0)
+        {
+            throw new ArgumentException("Кількість має бути більше нуля", nameof(quantity));
+        }
+
         var cart = await GetCartByUserIdAsync(userId);
         var item = cart.Items.FirstOrDefault(i => i.ProductId == productId);
 
         if (item == null)
         {
-            throw new Exception("Товар у кошику не знайдено");
+            throw new InvalidOperationException("Товар у кошику не знайдено");
         }
 
         var product = await _context.Products.FindAsync(productId);
         if (product == null)
         {
-            throw new Exception("Товар не існує");
+            throw new InvalidOperationException("Товар не існує");
         }
 
         if (product.StockQuantity < quantity)
         {
-            throw new Exception("Недостатньо товару на складі");
+            throw new InvalidOperationException("Недостатньо товару на складі");
         }
 
         item.Quantity = quantity;
@@ -118,13 +130,21 @@ public class CartService : ICartService
 
     public async Task<Order> CheckoutAsync(string userId)
     {
+        var transaction = _context.Database.IsRelational()
+            ? await _context.Database.BeginTransactionAsync()
+            : null;
+
         var cart = await _context.Carts
             .Include(c => c.Items)
             .FirstOrDefaultAsync(c => c.UserId == userId);
 
         if (cart == null || !cart.Items.Any())
         {
-            throw new Exception("Кошик порожній");
+            if (transaction != null)
+            {
+                await transaction.RollbackAsync();
+            }
+            throw new InvalidOperationException("Кошик порожній");
         }
 
         var order = new Order
@@ -139,16 +159,17 @@ public class CartService : ICartService
 
         foreach (var item in cart.Items)
         {
-            var product = await _context.Products.FindAsync(item.ProductId);
+            var product = await _context.Products
+                .FirstOrDefaultAsync(p => p.Id == item.ProductId);
             
             if (product == null)
             {
-                throw new Exception($"Товар з ID {item.ProductId} більше не існує");
+                throw new InvalidOperationException($"Товар з ID {item.ProductId} більше не існує");
             }
 
             if (product.StockQuantity < item.Quantity)
             {
-                throw new Exception($"Недостатньо товару {product.Name} для оформлення замовлення");
+                throw new InvalidOperationException($"Недостатньо товару {product.Name} для оформлення замовлення");
             }
 
             product.StockQuantity -= item.Quantity;
@@ -167,10 +188,15 @@ public class CartService : ICartService
         }
 
         _context.Orders.Add(order);
-
         _context.CartItems.RemoveRange(cart.Items);
         
         await _context.SaveChangesAsync();
+
+        if (transaction != null)
+        {
+            await transaction.CommitAsync();
+        }
+
         return order;
     }
 }

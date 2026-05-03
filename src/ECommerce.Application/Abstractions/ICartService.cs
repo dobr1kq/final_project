@@ -1,13 +1,17 @@
+using ECommerce.Domain;
+
 namespace ECommerce.Application.Abstractions;
 
 public interface ICartService
 {
+    Task<Cart> GetCartByUserIdAsync(string userId);
     // Додати товар: перевіряє StockQuantity в Domain
-    Task AddItemAsync(Guid productId, int quantity);
+    Task AddItemAsync(string userId, Guid productId, int quantity);
     
     // Оновити кількість: перевіряє доступність на складі
-    Task UpdateQuantityAsync(Guid productId, int quantity);
+    Task UpdateQuantityAsync(string userId, Guid productId, int quantity);
+    Task RemoveItemAsync(string userId, Guid productId);
     
     // Оформлення замовлення: логіка фіксації ціни та очищення кошика
-    Task<Guid> CheckoutAsync();
+    Task<Order> CheckoutAsync(string userId);
 }
