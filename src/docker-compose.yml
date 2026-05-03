@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: ecommerce_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mx050282
+      POSTGRES_DB: ecommerce_db
+    ports:
+      - "5432:5432"
+
+  api:
+    image: ecommerce_api
+    build:
+      context: ./src
+      dockerfile: ECommerce.Api/Dockerfile
+    ports:
+      - "5000:8080"
+    depends_on:
+      - db
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=ecommerce_db;Username=postgres;Password=mx050282
