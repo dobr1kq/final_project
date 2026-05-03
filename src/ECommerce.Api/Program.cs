@@ -33,6 +33,11 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 
+// Health check endpoint для k6 tests
+app.MapGet("/api/cart/health", () => Results.Ok(new { status = "healthy" }))
+    .WithName("HealthCheck")
+    .WithOpenApi();
+
 app.Run();
 
 public partial class Program { }

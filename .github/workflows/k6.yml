@@ -5,19 +5,21 @@ on:
     branches: [main]
     paths:
       - 'src/ECommerce.Api/**'
-      - 'tests/ECommerce.PerformanceTests/**'
+      - 'tests/ECommerce.UnitTests/Performance/**'
   workflow_dispatch:
     inputs:
       test-type:
         description: 'Тип тесту k6'
         required: true
-        default: smoke
+        default: load
         type: choice
-        options: [smoke, load, stress]
+        options: [load, stress]
 
 jobs:
   k6:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     services:
       postgres:
@@ -73,21 +75,21 @@ jobs:
         id: test-type
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "type=smoke" >> $GITHUB_OUTPUT
+            echo "type=load" >> $GITHUB_OUTPUT
           else
-            echo "type=${{ inputs.test-type }}" >> $GITHUB_OUTPUT
+            echo "type=${{ github.event.inputs.test-type }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Run k6
+      - name: Run k6 Performance Test
         run: |
           k6 run \
             -e BASE_URL=http://localhost:5000 \
-            tests/ECommerce.PerformanceTests/scripts/${{ steps.test-type.outputs.type }}-test.js \
+            tests/ECommerce.UnitTests/Performance/load-test.js \
             --summary-export=k6-results.json
 
-      - name: Upload results
+      - name: Upload k6 results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: k6-results-${{ steps.test-type.outputs.type }}
+          name: k6-results
           path: k6-results.json
