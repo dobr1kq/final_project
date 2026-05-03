@@ -23,9 +23,6 @@ public class ProductService(AppDbContext context) : IProductService
         return await query.ToListAsync();
     }
 
-    public async Task<Product?> GetByIdAsync(Guid id) => 
-        await context.Products.FindAsync(id);
-
     public async Task CreateProductAsync(Product product)
     {
         if (string.IsNullOrWhiteSpace(product.SKU))

@@ -30,8 +30,11 @@ public class ProductsController : ControllerBase
     {
         try
         {
+            if (product.Id == Guid.Empty)
+                product.Id = Guid.NewGuid();
+
             await _productService.CreateProductAsync(product);
-            return Created(string.Empty, product);
+            return Created($"/api/products/{product.Id}", product);
         }
         catch (Exception ex)
         {

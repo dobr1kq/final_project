@@ -77,7 +77,6 @@ public class CartService : ICartService
                 UnitPrice = product.Price 
             };
             _context.CartItems.Add(newItem);
-            cart.Items.Add(newItem);
         }
 
         cart.UpdatedAt = DateTime.UtcNow;
@@ -180,7 +179,7 @@ public class CartService : ICartService
                 ProductId = item.ProductId,
                 ProductName = product.Name,
                 Quantity = item.Quantity,
-                UnitPrice = product.Price
+                UnitPrice = item.UnitPrice
             };
 
             order.Items.Add(orderItem);
